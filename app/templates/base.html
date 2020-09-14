@@ -1,0 +1,17 @@
+<html>
+    <head>
+        {% if title %}
+            <title>{{ title }} - Page</title>
+        {% else %}
+            <title>Welcome to Plux</title>
+        {% endif %}
+
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    </head>
+    <body>
+        <div class="container">
+            {% block content %}
+            {% endblock content %}
+        </div>
+    </body>
+</html>
