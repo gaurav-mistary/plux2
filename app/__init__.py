@@ -12,6 +12,7 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 login = LoginManager(app)
 login.login_view = 'users.login'
+login.login_message_category = 'info'
 mail = Mail(app)
 
 from app.users import users
