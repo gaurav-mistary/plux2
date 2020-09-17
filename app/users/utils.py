@@ -1,9 +1,14 @@
 import random
+import os
 import string
 from app import mail
 from flask_mail import Message
-from flask import render_template
+from flask import render_template, url_for
 from app import app
+import subprocess
+from config import basedir
+import secrets
+from PIL import Image
 
 def generate_verification_code(size=8):
     verification_code = ''.join(
@@ -34,3 +39,28 @@ def send_verification_email(user):
     recipients = user.email
     text_body = render_template('emails/verification.txt', user=user, token=token)
     html_body = render_template('emails/verification.html', user=user, token=token)
+
+def after_register(user):
+    
+    folder_url = basedir+ '/app' + url_for('static', filename=f'img/{user.username}')
+    
+    if not os.path.isdir(folder_url):
+        subprocess.run(['mkdir', folder_url])
+        subprocess.run(['mkdir', folder_url + '/profile'])
+        subprocess.run(['mkdir', folder_url + '/posts'])
+        
+    print(os.path.isdir(folder_url))
+    
+
+def save_profile_pic(form_profile_pic, user):
+    token = str(secrets.token_hex(10))
+    _, pic_ext = os.path.splitext(form_profile_pic.filename)
+    profile_pic_name = token + pic_ext
+    profile_pic_path = os.path.join(app.root_path, f'static/img/{user.username}/profile/', profile_pic_name)
+    
+    output_size = (125,125)
+    i = Image.open(form_profile_pic)
+    i.thumbnail(output_size)
+    i.save(profile_pic_path)
+
+    return profile_pic_name    

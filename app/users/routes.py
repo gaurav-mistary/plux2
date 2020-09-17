@@ -1,12 +1,18 @@
 from flask import render_template, url_for, redirect, flash, request
 from app.users import users
 from app.users.utils import send_verification_email
-from app import db
+from app import db, app
 from flask_login import login_user, current_user, logout_user, login_required
-from app.users.forms import LoginForm, RegistrationForm, EmptyForm
+from app.users.forms import LoginForm, RegistrationForm, EmptyForm, EditProfileForm
 from app.models import User
 from werkzeug.urls import url_parse
-from app.users.utils import generate_verification_code
+from app.users.utils import generate_verification_code, after_register, save_profile_pic
+import subprocess
+import os
+
+
+# -------------------------------- LOGIN -----------------------------------------------------
+
 
 @users.route('/users/login', methods=['GET', 'POST'])
 def login():
@@ -37,7 +43,13 @@ def login():
         flash('Login Successfull', 'success')
         return redirect(next_url)
 
-    return render_template('login.html', title='Login', form=form)
+    return render_template('users/login.html', title='Login', form=form)
+
+
+
+# -------------------------------- REGISTER -----------------------------------------------------
+
+
 
 @users.route('/users/register', methods=['GET', 'POST'])
 def register():
@@ -53,14 +65,25 @@ def register():
             email = form.email.data,
             about_me = form.about_me.data
         )
+        
+        if form.profile_pic.data:
+            profile_pic_name = save_profile_pic(form.profile_pic.data, user)
+            user.profile_pic = profile_pic_name
+            
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
         send_verification_email(user)
+        after_register(user)
         flash('Congratulations. You are now a registered user.', 'success')
         return redirect(url_for('users.login'))
     
-    return render_template('register.html', title='Register', form=form)
+    return render_template('users/register.html', title='Register', form=form)
+
+
+
+# -------------------------------- LOGOUT -----------------------------------------------------
+
 
 @users.route('/users/logout')
 @login_required
@@ -68,6 +91,10 @@ def logout():
     logout_user()
     flash('Logged out of session.', 'info')
     return redirect(url_for('main.index'))
+
+
+
+# -------------------------------- VERIFICATION PENDING -----------------------------------------------
 
 
 @users.route('/users/<username>/verification_pending', methods=['GET', 'POST'])
@@ -85,7 +112,11 @@ def verification_pending(username):
         flash('Verification Email sent. Please check your inbox', 'success')
         return redirect(url_for('users.verification_pending', username=user.username))
     
-    return render_template('verification_pending.html',title='Verify User', user=user, form=form)
+    return render_template('users/verification_pending.html',title='Verify User', user=user, form=form)
+
+
+
+# -------------------------------- VERIFY -----------------------------------------------------
 
 
 @users.route('/users/<username>/verify/<token>')
@@ -101,7 +132,11 @@ def verify_user(username, token):
     flash('User Verified', 'info')
     return redirect(url_for('main.index'))
 
-@users.route('/users/<username>/profile')
+
+# -------------------------------- PROFILE -----------------------------------------------------
+
+
+@users.route('/users/<username>/profile', methods=['GET', 'POST'])
 @login_required
 def profile(username):
     user = User.query.filter_by(username=username).first()
@@ -109,4 +144,109 @@ def profile(username):
         flash(f'No user found with username {username}', 'info')
         return redirect(url_for('main.index'))
     
-    return render_template('profile.html', user=user)
+    accept_form = EmptyForm()   
+    reject_form = EmptyForm()
+    
+    form = EditProfileForm()
+    if form.validate_on_submit():
+        
+        if form.profile_pic.data:
+            old_profile_pic = user.profile_pic
+            profile_pic_name = save_profile_pic(form.profile_pic.data, user)
+            user.profile_pic = profile_pic_name
+            old_profile_pic_path = os.path.join(app.root_path, f'static/img/{user.username}/profile/', old_profile_pic)
+            print(old_profile_pic_path)
+            subprocess.run(['rm', old_profile_pic_path])
+        
+        user.username = form.username.data
+        user.email = form.email.data
+        db.session.commit()
+        
+        flash('Profile updated successfully', 'success')
+        return redirect(url_for('users.profile', username=username))
+
+    else:
+        form.username.data = user.username
+        form.email.data = user.email
+    
+    if user.profile_pic != 'default.jpg':
+        image_src = url_for('static', filename=f'img/{user.username}/profile/{user.profile_pic}')
+    else:
+        image_src = None
+    
+    return render_template('users/profile.html', 
+                           user=user, 
+                           form=form, 
+                           image_src=image_src, 
+                           accept_form=accept_form, 
+                           reject_form=reject_form
+                           )
+
+
+# -------------------------------- VIEW REQUESTS -----------------------------------------------------
+
+@users.route('/users/<username>/requests')
+@login_required
+def view_requests(username):
+    
+    user = User.query.filter_by(username=username).first()
+    
+    if user is None:
+            flash(f'No user found with username: {username}', 'info')
+            return redirect(url_for('users.profile', username=current_user.username))
+    
+    pending_requests = user.requests.all()
+    
+    return render_template('users/requests.html', 
+                           title='requests', 
+                           user=user,
+                           pending_requests=pending_requests,
+                           )
+
+
+# -------------------------------- SEND REQUEST -----------------------------------------------------
+
+@users.route('/user/<username>/send_request', methods=['POST'])
+@login_required
+def send_request(username):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=username).first()
+        
+        if user is None:
+            flash(f'No user found with username: {username}', 'info')
+            return redirect(url_for('users.profile', username=current_user.username))
+        
+        if user == current_user:
+            flash('Sorry, you cannot send yourself a friend request', 'info')
+            return redirect(url_for('users.profile', username=current_user.username))
+        
+        current_user.send_request(user)
+        db.session.commit()
+        flash('Request sent successfully', 'success')
+        return redirect(url_for('users.profile', username=user.username))
+    else:
+        return redirect(url_for('main.index'))
+    
+@users.route('/user/<username>/cancel_request', methods=['POST'])
+@login_required
+def cancel_request(username):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=username).first()
+        
+        if user is None:
+            flash(f'No user found with username: {username}', 'info')
+            return redirect(url_for('users.profile', username=current_user.username))
+        
+        if user == current_user:
+            flash('Sorry, you cannot send yourself a friend request', 'info')
+            return redirect(url_for('users.profile', username=current_user.username))
+        
+        current_user.cancel_request(user)
+        db.session.commit()
+        flash('Request cancelled', 'info')
+        return redirect(url_for('users.profile', username=user.username))
+    else:
+        return redirect(url_for('main.index'))
+    

@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% for sender in pending_requests %}
+    <article class="media content-section">
+        <div class="media-body">
+        <div class="article-metadata">
+            <a class="mr-2" href="#">{{ sender.fname }} {{ sender.lname }}</a>
+            <small class="text-muted">has requested to follow you</small>
+        </div>
+        <h2><a class="article-title" href="#">Accept</a></h2>
+        <p class="article-content">reject</p>
+        </div>
+    </article>
+{% endfor %}
+{% endblock content %}
