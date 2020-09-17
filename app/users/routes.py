@@ -100,3 +100,13 @@ def verify_user(username, token):
     db.session.commit()
     flash('User Verified', 'info')
     return redirect(url_for('main.index'))
+
+@users.route('/users/<username>/profile')
+@login_required
+def profile(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash(f'No user found with username {username}', 'info')
+        return redirect(url_for('main.index'))
+    
+    return render_template('profile.html', user=user)
