@@ -10,8 +10,16 @@ def user_loader(id):
 
 requests = db.Table(
     'requests',
+    db.Column('id', db.Integer, primary_key=True),
     db.Column('sender_id', db.Integer, db.ForeignKey('user.id')),
     db.Column('receiver_id', db.Integer, db.ForeignKey('user.id'))
+)
+
+
+friends = db.Table(
+    'friends',
+    db.Column('self_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('friend_id', db.Integer, db.ForeignKey('user.id'), primary_key=True)
 )
 
 class User(db.Model, UserMixin):
@@ -32,6 +40,15 @@ class User(db.Model, UserMixin):
         secondaryjoin=(requests.c.receiver_id == id),
         backref = db.backref('requests', lazy='dynamic'),
         lazy='dynamic'
+    )
+    
+    befriend = db.relationship(
+        'User',
+        secondary = friends,
+        primaryjoin = (friends.c.self_id == id),
+        secondaryjoin = (friends.c.friend_id == id),
+        backref = db.backref('friends', lazy='dynamic'),
+        lazy = 'dynamic'
     )
     
     def __repr__(self):
@@ -71,6 +88,20 @@ class User(db.Model, UserMixin):
     def cancel_request(self, user):
         if self.has_requested(user):
             self.requested.remove(user)
+            
+            
+    def is_friends_with(self, user):
+        return self.befriend.filter(friends.c.friend_id == user.id).count() > 0
+    
+    def make_friend(self, user):
+        if not self.is_friends_with(user):
+            self.befriend.append(user)
+            user.befriend.append(self)
+    
+    def lose_friend(self, user):
+        if self.is_friends_with(user):
+            self.befriend.remove(user)
+            user.befriend.remove(self)
     
             
     

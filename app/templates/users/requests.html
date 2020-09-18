@@ -5,11 +5,17 @@
     <article class="media content-section">
         <div class="media-body">
         <div class="article-metadata">
-            <a class="mr-2" href="#">{{ sender.fname }} {{ sender.lname }}</a>
+            <a class="mr-2" href="{{ url_for('users.profile', username=sender.username) }}">{{ sender.fname }} {{ sender.lname }}</a>
             <small class="text-muted">has requested to follow you</small>
         </div>
-        <h2><a class="article-title" href="#">Accept</a></h2>
-        <p class="article-content">reject</p>
+            <form style="display: inline;" action="{{ url_for('users.accept_request', username=current_user.username, sender_username=sender.username) }}" method="post">
+                {{ accept_form.hidden_tag() }}
+                {{ accept_form.submit(class="btn btn-outline-success", value="Accept") }}
+            </form>
+            <form style="display: inline;" class="ml-3 mt-4" action="" method="post">
+                {{ reject_form.hidden_tag() }}
+                {{ reject_form.submit(class="btn btn-outline-danger", value="Reject") }}
+            </form>
         </div>
     </article>
 {% endfor %}

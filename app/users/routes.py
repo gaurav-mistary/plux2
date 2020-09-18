@@ -195,18 +195,22 @@ def view_requests(username):
             flash(f'No user found with username: {username}', 'info')
             return redirect(url_for('users.profile', username=current_user.username))
     
+    accept_form = EmptyForm()
+    reject_form = EmptyForm()
     pending_requests = user.requests.all()
     
     return render_template('users/requests.html', 
                            title='requests', 
                            user=user,
                            pending_requests=pending_requests,
+                           accept_form = accept_form,
+                           reject_form = reject_form
                            )
 
 
 # -------------------------------- SEND REQUEST -----------------------------------------------------
 
-@users.route('/user/<username>/send_request', methods=['POST'])
+@users.route('/users/<username>/send_request', methods=['POST'])
 @login_required
 def send_request(username):
     form = EmptyForm()
@@ -228,7 +232,12 @@ def send_request(username):
     else:
         return redirect(url_for('main.index'))
     
-@users.route('/user/<username>/cancel_request', methods=['POST'])
+    
+# -------------------------------- CANCEL REQUEST -----------------------------------------------------
+
+    
+    
+@users.route('/users/<username>/cancel_request', methods=['POST'])
 @login_required
 def cancel_request(username):
     form = EmptyForm()
@@ -250,3 +259,33 @@ def cancel_request(username):
     else:
         return redirect(url_for('main.index'))
     
+    
+# -------------------------------- CANCEL REQUEST -----------------------------------------------------
+
+@users.route('/users/<username>/accept_request/<sender_username>', methods=['POST'])
+@login_required
+def accept_request(username, sender_username):
+    accept_form = EmptyForm()
+    if accept_form.validate_on_submit():
+        user = User.query.filter_by(username=username).first()
+        if user is None:
+            flash(f'No user found with username: {username}', 'info')
+            return redirect(url_for('main_index'))
+        sender_user = User.query.filter_by(username=sender_username).first()
+        if sender_user is None:
+            flash(f'No user found with username: {sender_username}', 'info')
+            return redirect(url_for('main_index'))
+        
+        if user == current_user:
+            if sender_user == user:
+                flash(f'Invalid Operation', 'danger')
+                return redirect(url_for('main_index'))
+            
+            sender_user.cancel_request(user)
+            user.make_friend(sender_user)
+            db.session.commit()
+            flash(f'You are now friends with {sender_user.fname} {sender_user.lname}', 'success')
+            return redirect(url_for('users.profile', username=sender_username))
+        else:
+            flash('Invalid operation', 'danger')
+            return redirect(url_for('main.index'))

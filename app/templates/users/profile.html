@@ -24,7 +24,7 @@
 
       {% if current_user.request_from(user) %}
         <p class="text-secondary text-muted">{{ user.username }} has requested to follow you</p>
-        <form method="post" action="">
+        <form method="post" action="{{ url_for('users.accept_request', username=current_user.username, sender_username=user.username) }}">
           {{ accept_form.hidden_tag() }}
           {{ accept_form.submit(class="btn btn-outline-success", value="Accept") }}
         </form>
@@ -37,6 +37,11 @@
         <form method="post" action="{{ url_for('users.cancel_request', username=user.username) }}">
           {{ form.hidden_tag() }}
           {{ form.submit(class="btn btn-outline-info", value="Cancel Request") }}
+        </form>
+      {% elif current_user.is_friends_with(user) %}
+        <form method="post" action="">
+          {{ form.hidden_tag() }}
+          {{ form.submit(class="btn btn-outline-info", value="Remove Friend") }}
         </form>
       {% else %}
         <form method="post" action="{{ url_for('users.send_request', username=user.username) }}">
