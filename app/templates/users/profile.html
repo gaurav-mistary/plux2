@@ -2,11 +2,6 @@
 
 {% block content %}
 <div class="content-section">
-    {% if user == current_user %}
-      <p align="right">
-        <a class="btn btn-outline-info" href="{{ url_for('users.view_requests', username=user.username) }}">Requests</a>
-      </p>
-    {% endif %}
     <div class="media">
         {% if image_src %}
         <img class="rounded-circle account-img" src="{{ image_src }}">
@@ -35,25 +30,31 @@
       
       {% elif current_user.has_requested(user) %}
         <form method="post" action="{{ url_for('users.cancel_request', username=user.username) }}">
-          {{ form.hidden_tag() }}
-          {{ form.submit(class="btn btn-outline-info", value="Cancel Request") }}
+          {{ cancel_request_form.hidden_tag() }}
+          {{ cancel_request_form.submit(class="btn btn-outline-info", value="Cancel Request") }}
         </form>
       {% elif current_user.is_friends_with(user) %}
         <form method="post" action="">
-          {{ form.hidden_tag() }}
-          {{ form.submit(class="btn btn-outline-info", value="Remove Friend") }}
+          {{ remove_friend_form.hidden_tag() }}
+          {{ remove_friend_form.submit(class="btn btn-outline-info", value="Remove Friend") }}
         </form>
       {% else %}
         <form method="post" action="{{ url_for('users.send_request', username=user.username) }}">
-          {{ form.hidden_tag() }}
-          {{ form.submit(class="btn btn-outline-info", value="Send Request") }}
+          {{ send_request_form.hidden_tag() }}
+          {{ send_request_form.submit(class="btn btn-outline-info", value="Send Request") }}
         </form>
       {% endif %}
     {% endif %}
     <br>
     <hr>
-
     {% if user == current_user %}
+      <p align="right">
+        <a class="btn btn-outline-info" href="{{ url_for('users.view_requests', username=user.username) }}">Requests</a>
+      </p>
+    {% endif %}
+    <hr>
+
+    {% if form %}
     <form action="" method="post" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
         <fieldset class="form-group">

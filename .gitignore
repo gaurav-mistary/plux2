@@ -1,0 +1,5 @@
+.flaskenv
+app/static/img/
+migrations/
+app.db
+__pycache__

@@ -2,7 +2,7 @@
 
 {% block content %}
     <div class="content-section">
-        <form action="" method="post">
+        <form action="" method="post" enctype="multipart/form-data">
             {{ form.hidden_tag() }}
             <fieldset class="form-group">
                 <legend class="border-bottom mb-4">Register</legend>
@@ -91,7 +91,7 @@
                     {% endif %}
                 </div>
                 <div class="form-group">
-                    {{ form.profile_pic.label() }}
+                    {{ form.profile_pic.label(class="form-control-lable") }}
                     {{ form.profile_pic(class="form-control-file") }}
                     {% if form.profile_pic.errors %}
                     {% for error in form.profile_pic.errors %}
