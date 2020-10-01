@@ -1,5 +1,5 @@
 .flaskenv
-app/static/img/*
+app/static/img/**
 migrations/
 app.db
 __pycache__

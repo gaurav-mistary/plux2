@@ -1,7 +1,7 @@
 from flask import render_template, url_for, redirect, flash, request
 from app.users import users
 from app.users.utils import send_verification_email
-from app import db, app
+from app import db, app, moment
 from flask_login import login_user, current_user, logout_user, login_required
 from app.users.forms import LoginForm, RegistrationForm, EmptyForm, EditProfileForm
 from app.models import User
@@ -9,7 +9,23 @@ from werkzeug.urls import url_parse
 from app.users.utils import generate_verification_code, after_register, save_profile_pic
 import subprocess
 import os
+from datetime import datetime
 
+@users.before_request
+def before_request():
+    if current_user.is_authenticated:
+        current_user.last_seen = datetime.utcnow()
+        db.session.commit()
+
+
+# -------------------------------- ALL USERS -----------------------------------------------------
+
+
+@users.route('/users/all')
+@login_required
+def all_users():
+    all_users = User.query.all()
+    return render_template('users/all_users.html', title='All Users', all_users=all_users)
 
 # -------------------------------- LOGIN -----------------------------------------------------
 

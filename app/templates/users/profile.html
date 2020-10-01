@@ -13,7 +13,13 @@
             <h5>@{{ user.username }}</h5>
             <p class="text-secondary">{{ user.email }}</p>
         </div>
+        
     </div>
+    {% if user.last_seen %}
+          <div>
+            <p>Last seen: {{ moment(user.last_seen).format('LLL') }}</p>
+          </div>
+    {% endif %}
 
     {% if user != current_user %}
 
