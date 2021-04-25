@@ -39,6 +39,8 @@ def send_verification_email(user):
     recipients = user.email
     text_body = render_template('emails/verification.txt', user=user, token=token)
     html_body = render_template('emails/verification.html', user=user, token=token)
+    
+    send_mail(subject, sender, recipients, text_body, html_body)
 
 def after_register(user):
     

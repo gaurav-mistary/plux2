@@ -11,11 +11,14 @@ import subprocess
 import os
 from datetime import datetime
 
-@users.before_request
-def before_request():
-    if current_user.is_authenticated:
+
+@users.before_app_request
+def check_confirmation_before_app_request():
+    if current_user.is_authenticated: 
         current_user.last_seen = datetime.utcnow()
-        db.session.commit()
+        if not current_user.is_verified \
+     and request.blueprint != 'users' and request.endpoint != 'static':
+            return redirect(url_for(verification_pending, username=current_user.username))
 
 
 # -------------------------------- ALL USERS -----------------------------------------------------
